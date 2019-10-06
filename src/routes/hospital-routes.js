@@ -7,17 +7,29 @@ const Hospital = require("../models/Hospital");
 const routes = express.Router();
 
 routes.get("/", (req, res) => {
-  Hospital.find({}, (err, hospitales) => {
-    if (err) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: "Error cargando hospitales",
-        errors: err
-      });
-    }
+  const { desde = 0 } = req.query;
 
-    return res.status(200).json({ ok: true, hospitales });
-  });
+  Hospital.find({})
+    .skip(parseInt(desde))
+    .limit(5)
+    .populate("usuario", "nombre email")
+    .exec((err, hospitales) => {
+      if (err) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: "Error cargando hospitales",
+          errors: err
+        });
+      }
+
+      Hospital.count({}, (err, conteo) => {
+        return res.status(200).json({
+          ok: true,
+          hospitales,
+          total: conteo
+        });
+      });
+    });
 });
 
 routes.post("/", mdAutenticacion.verificarToken, (req, res) => {
@@ -44,7 +56,7 @@ routes.post("/", mdAutenticacion.verificarToken, (req, res) => {
 
 routes.put("/:id", mdAutenticacion.verificarToken, (req, res) => {
   const { id } = req.params;
-  const { nombre, img } = req.body;
+  const { nombre } = req.body;
 
   Hospital.findById(id, (err, hospital) => {
     if (err) {
@@ -64,7 +76,7 @@ routes.put("/:id", mdAutenticacion.verificarToken, (req, res) => {
     }
 
     hospital.nombre = nombre;
-    hospital.img = img;
+    hospital.usuario = req.usuario._id;
 
     hospital.save((err, hospitalGuardado) => {
       if (err) {

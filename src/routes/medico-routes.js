@@ -7,17 +7,30 @@ const Medico = require("../models/Medico");
 const routes = express.Router();
 
 routes.get("/", (req, res) => {
-  Medico.find({}, (err, medicos) => {
-    if (err) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: "Error cargando medicos",
-        errors: err
-      });
-    }
+  const { desde = 0 } = req.query;
 
-    return res.status(200).json({ ok: true, medicos });
-  });
+  Medico.find({})
+    .skip(parseInt(desde))
+    .limit(5)
+    .populate("usuario", "nombre email")
+    .populate("hospital", "nombre")
+    .exec((err, medicos) => {
+      if (err) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: "Error cargando medicos",
+          errors: err
+        });
+      }
+
+      Medico.count({}, (err, conteo) => {
+        return res.status(200).json({
+          ok: true,
+          medicos,
+          total: conteo
+        });
+      });
+    });
 });
 
 routes.post("/", mdAutenticacion.verificarToken, (req, res) => {
@@ -44,7 +57,7 @@ routes.post("/", mdAutenticacion.verificarToken, (req, res) => {
 
 routes.put("/:id", mdAutenticacion.verificarToken, (req, res) => {
   const { id } = req.params;
-  const { nombre, img, hospital } = req.body;
+  const { nombre, hospital } = req.body;
 
   Medico.findById(id, (err, medico) => {
     if (err) {
@@ -64,8 +77,8 @@ routes.put("/:id", mdAutenticacion.verificarToken, (req, res) => {
     }
 
     medico.nombre = nombre;
-    medico.img = img;
     medico.hospital = hospital;
+    medico.usuario = req.usuario._id;
 
     medico.save((err, medicoGuardado) => {
       if (err) {

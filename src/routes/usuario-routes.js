@@ -8,20 +8,28 @@ const Usuario = require("../models/Usuario");
 const routes = express.Router();
 
 routes.get("/", (req, res) => {
-  Usuario.find({}, "nombre email img role").exec((err, usuarios) => {
-    if (err) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: "Error cargando usuario",
-        errors: err
-      });
-    }
+  const { desde = 0 } = req.query;
 
-    return res.status(200).json({
-      ok: true,
-      usuarios
+  Usuario.find({}, "nombre email img role")
+    .skip(parseInt(desde))
+    .limit(5)
+    .exec((err, usuarios) => {
+      if (err) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: "Error cargando usuario",
+          errors: err
+        });
+      }
+
+      Usuario.count({}, (err, conteo) => {
+        return res.status(200).json({
+          ok: true,
+          usuarios,
+          total: conteo
+        });
+      });
     });
-  });
 });
 
 routes.put("/:id", mdAutenticacion.verificarToken, (req, res) => {
