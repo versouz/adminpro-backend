@@ -12,7 +12,9 @@ mongoose.connect(
   "mongodb+srv://everton:everton@omnistack2019-9-9wfli.mongodb.net/hospitalDb?retryWrites=true&w=majority",
   {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false
   },
   (err, res) => {
     if (err) throw err;
